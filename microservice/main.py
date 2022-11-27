@@ -5,7 +5,7 @@ from collections import deque
 from telethon import TelegramClient
 
 from telegram_parser import telegram_parser
-from rss_parser import rss_parser
+# from rss_parser import rss_parser
 from bcs_parser import bcs_parser
 from utils import create_logger, get_history, send_error_message
 from config import api_id, api_hash, gazp_chat_id, bot_token
@@ -15,45 +15,42 @@ from config import api_id, api_hash, gazp_chat_id, bot_token
 # Можно добавить телеграм канал, rss ссылку или изменить фильтр новостей
 
 telegram_channels = {
-    1099860397: 'https://t.me/rbc_news',
-    1428717522: 'https://t.me/gazprom',
-    1101170442: 'https://t.me/rian_ru',
-    1133408457: 'https://t.me/prime1',
-    1149896996: 'https://t.me/interfaxonline',
-    # 1001029560: 'https://t.me/bcs_express',
-    1203560567: 'https://t.me/markettwits',  # Канал аггрегатор новостей
+    # 1099860397: 'https://t.me/rbc_news',
+    # 1428717522: 'https://t.me/gazprom',
+    # 1101170442: 'https://t.me/rian_ru',
+    # 1133408457: 'https://t.me/prime1',
+    # 1149896996: 'https://t.me/interfaxonline',
+    # # 1001029560: 'https://t.me/bcs_express',
+    # 1818397776: 'https://t.me/traleetoday',  # Канал аггрегатор новостей
 }
 
-rss_channels = {
-    'www.rbc.ru': 'https://rssexport.rbc.ru/rbcnews/news/20/full.rss',
-    'www.ria.ru': 'https://ria.ru/export/rss2/archive/index.xml',
-    'www.1prime.ru': 'https://1prime.ru/export/rss2/index.xml',
-    'www.interfax.ru': 'https://www.interfax.ru/rss.asp',
-}
+# rss_channels = {
+#     # 'www.rbc.ru': 'https://rssexport.rbc.ru/rbcnews/news/20/full.rss',
+#     # 'www.ria.ru': 'https://ria.ru/export/rss2/archive/index.xml',
+#     # 'www.1prime.ru': 'https://1prime.ru/export/rss2/index.xml',
+#     # 'www.interfax.ru': 'https://www.interfax.ru/rss.asp',
+# }
 
 
 def check_pattern_func(text):
-    '''Вибирай только посты или статьи про газпром или газ'''
-    words = text.lower().split()
+    # '''Вибирай только посты или статьи про газпром или газ'''
+    # words = text.lower().split()
 
-    key_words = [
-        'газп',     # газпром
-        'газо',     # газопровод, газофикация...
-        'поток',    # сервеный поток, северный поток 2, южный поток
-        'спг',      # спг - сжиженный природный газ
-        'gazp',
-    ]
+    # key_words = [
+    #     'Tralee',     # газпром
+    #     'Kerry',     # газопровод, газофикация...
+    # ]
 
-    for word in words:
-        if 'газ' in word and len(word) < 6:  # газ, газу, газом, газа
-            return True
+    # for word in words:
+    #     if 'new' in word and len(word) < 6:  # газ, газу, газом, газа
+    #         return True
 
-        for key in key_words:
-            if key in word:
-                return True
+    #     for key in key_words:
+    #         if key in word:
+    #             return True
 
-    return False
-
+    # return False
+    return True
 
 ###########################
 # Если у парсеров много ошибок или появляются повторные новости
@@ -68,12 +65,12 @@ amount_messages = 50
 posted_q = deque(maxlen=amount_messages)
 
 # +/- интервал между запросами у rss и кастомного парсеров в секундах
-timeout = 2
+timeout = 300
 
 ###########################
 
 
-logger = create_logger('gazp')
+logger = create_logger('Traletoday')
 logger.info('Start...')
 
 loop = asyncio.new_event_loop()
@@ -95,7 +92,7 @@ async def send_message_func(text):
 
 
 # Телеграм парсер
-client = telegram_parser('gazp', api_id, api_hash, telegram_channels, posted_q,
+client = telegram_parser('Traleetoday', api_id, api_hash, telegram_channels, posted_q,
                          n_test_chars, check_pattern_func, send_message_func,
                          tele_logger, loop)
 
@@ -109,19 +106,19 @@ posted_q.extend(history)
 httpx_client = httpx.AsyncClient()
 
 # Добавляй в текущий event_loop rss парсеры
-for source, rss_link in rss_channels.items():
+# for source, rss_link in rss_channels.items():
 
-    # https://docs.python-guide.org/writing/gotchas/#late-binding-closures
-    async def wrapper(source, rss_link):
-        try:
-            await rss_parser(httpx_client, source, rss_link, posted_q,
-                             n_test_chars, timeout, check_pattern_func,
-                             send_message_func, logger)
-        except Exception as e:
-            message = f'&#9888; ERROR: {source} parser is down! \n{e}'
-            await send_error_message(message, bot_token, gazp_chat_id, logger)
+#     # https://docs.python-guide.org/writing/gotchas/#late-binding-closures
+#     async def wrapper(source, rss_link):
+#         try:
+#             await rss_parser(httpx_client, source, rss_link, posted_q,
+#                              n_test_chars, timeout, check_pattern_func,
+#                              se+353nd_message_func, logger)
+#         except Exception as e:
+#             message = f'&#9888; ERROR: {source} parser is down! \n{e}'
+#             await send_error_message(message, bot_token, gazp_chat_id, logger)
 
-    loop.create_task(wrapper(source, rss_link))
+#     loop.create_task(wrapper(source, rss_link))
 
 
 # Добавляй в текущий event_loop кастомный парсер
@@ -130,7 +127,7 @@ async def bcs_wrapper():
         await bcs_parser(httpx_client, posted_q, n_test_chars, timeout,
                          check_pattern_func, send_message_func, logger)
     except Exception as e:
-        message = f'&#9888; ERROR: bcs-express.ru parser is down! \n{e}'
+        message = f'&#9888; ERROR: Traleetoday parser is down! \n{e}'
         await send_error_message(message, bot_token, gazp_chat_id, logger)
 
 loop.create_task(bcs_wrapper())

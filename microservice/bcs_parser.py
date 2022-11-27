@@ -8,11 +8,12 @@ from utils import random_user_agent_headers
 
 
 async def bcs_parser(httpx_client, posted_q, n_test_chars=50, 
-                     timeout=2, check_pattern_func=None, 
+                     timeout=300, check_pattern_func=None, 
                      send_message_func=None, logger=None):
-    '''Кастомный парсер сайта bcs-express.ru'''
-    bcs_link = 'https://bcs-express.ru/category'
-    source = 'www.bcs-express.ru'
+    '''Кастомный парсер сайта traleetoday.ie'''
+    bcs_link = 'http://traleetoday.ie/'
+    source = 'traleetoday.ie'
+    print("start parser")
 
     while True:
         try:
@@ -21,44 +22,45 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
         except Exception as e:
             if not (logger is None):
                 logger.error(f'{source} error pass\n{e}')
+                print("error pass")
 
             await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
             continue
 
         selector = Selector(text=response.text)
+        # get news from website
+        news = selector.xpath('//div[@class="recent-post"]')
+        print("news", len(news))
+        if len(news) == 0:
+            if not (logger is None):
+                logger.error(f'{source} empty pass')
+                print("empty pass")
 
-        for row in selector.xpath('//div[@class="feed__list"]/div/div')[::-1]:
-
-            raw_text = row.xpath('*//text()').extract()
-
-            title = raw_text[3] if len(raw_text) > 3 else ''
-            summary = raw_text[5] if len(raw_text) > 5 else ''
-            if 'ксперт' in summary:  # Эксперт
-                title = f'{title}, {summary}'
-                summary = raw_text[11] if len(raw_text) > 11 else ''
-
-            news_text = f'{title}\n{summary}'
-
-            if not (check_pattern_func is None):
-                if not check_pattern_func(news_text):
-                    continue
+            await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
+            continue
+  
+       
+        for row in news:
+            try:
+                link = row.xpath('.//a[@rel="bookmark"]/@href').extract_first()
+                title = row.xpath('.//a[@rel="bookmark"]/text()').extract_first()#.get() #.extract()
+                summary = row.xpath('.//div[@class="entry"]/p/text()').extract_first()#.get() #.extract()
+                # print(title, link, summary)
+            except Exception as e:
+                if not (logger is None):
+                    logger.error(f'{source} error pass\n{e}')
+                continue
+            news_text = f'{title}\n{summary}\n{link}'
 
             head = news_text[:n_test_chars].strip()
 
             if head in posted_q:
                 continue
 
-            raw_link = row.xpath('a/@href').extract()
-            link = raw_link[0] if len(raw_link) > 0 else ''
-            if 'author' in link:
-                link = raw_link[1] if len(raw_link) > 1 else ''
-
-            post = f'<b>{source}</b>\n{source + link}\n{news_text}'
-
             if send_message_func is None:
-                print(post, '\n')
+                print(news_text, '\n')
             else:
-                await send_message_func(post)
+                await send_message_func(news_text)
 
             posted_q.appendleft(head)
 
