@@ -29,27 +29,48 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
 
         selector = Selector(text=response.text)
         # get news from website
-        news = selector.xpath('//div[@class="recent-post"]')
-        print("news", len(news))
-        if len(news) == 0:
+        lastnews = selector.xpath('//div[contains(@class, "item post-")]')
+        print("news", len(lastnews))
+        if len(lastnews) == 0:
             if not (logger is None):
                 logger.error(f'{source} empty pass')
                 print("empty pass")
 
             await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
             continue
-  
-       
-        for row in news:
+        
+        for row in lastnews:
             try:
-                link = row.xpath('.//a[@rel="bookmark"]/@href').extract_first()
-                title = row.xpath('.//a[@rel="bookmark"]/text()').extract_first()#.get() #.extract()
-                summary = row.xpath('.//div[@class="entry"]/p/text()').extract_first()#.get() #.extract()
-                # print(title, link, summary)
+                link = row.xpath('.//a/@href').extract_first()
             except Exception as e:
                 if not (logger is None):
                     logger.error(f'{source} error pass\n{e}')
                 continue
+            
+            try:
+                news_response = await httpx_client.get(link, headers=random_user_agent_headers())
+                news_response.raise_for_status()
+            except Exception as e:
+                if not (logger is None):
+                    logger.error(f'{link} error pass\n{e}')
+                    print("error pass")
+                await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
+                continue
+
+            selector = Selector(text=news_response.text)
+            title = selector.xpath('.//h1[@class="title"]/a[@rel="bookmark"]/text()').extract_first()
+            summary = selector.xpath('.//div[@class="entry"]//p[not(contains(@class, "wp-caption aligncenter"))]/text()').extract()
+            print("summary", summary)
+        # for row in news:
+        #     try:
+        #         link = row.xpath('.//a/@href').extract_first()
+        #         title = row.xpath('.//a/@title').extract_first()#.get() #.extract()
+        #         summary = row.xpath('.//div[@class="entry"]/p/text()').extract_first()#.get() #.extract()
+        #         # print(title, link, summary)
+        #     except Exception as e:
+        #         if not (logger is None):
+        #             logger.error(f'{source} error pass\n{e}')
+        #         continue
             news_text = f'{title}\n{summary}\n{link}'
 
             head = news_text[:n_test_chars].strip()
