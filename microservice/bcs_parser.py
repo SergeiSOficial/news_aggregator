@@ -54,7 +54,7 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
                 if not (logger is None):
                     logger.error(f'{source} error pass\n{e}')
                 continue
-            title = "\033[1m" + title + "\033[0m"
+            title = "\033" + title + "\033"
             news_text = f'{title}\n{summary}\n{link}'
 
             head = news_text[:n_test_chars].strip()
