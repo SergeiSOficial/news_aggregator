@@ -57,3 +57,8 @@ https://habr.com/ru/post/689520/
 [![](https://habrastorage.org/webt/gz/gc/i6/gzgci6pivvdnk-gmj-kepml5q9y.gif)](https://yoomoney.ru/to/4100117863420642)
 
 
+
+
+docker compose build
+docker save -o news-maker.tar news-maker
+sudo docker load -i ./news-maker.tar  

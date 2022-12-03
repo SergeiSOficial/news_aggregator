@@ -83,11 +83,14 @@ bot = TelegramClient('bot', api_id, api_hash,
 bot.start(bot_token=bot_token)
 
 
-async def send_message_func(text):
+async def send_message_func(text, img_url):
     '''Отправляет посты в канал через бот'''
-    await bot.send_message(entity=gazp_chat_id,
-                           parse_mode='html', link_preview=False, message=text)
-
+    if(len(img_url) > 0):
+        await bot.send_message(entity=gazp_chat_id,
+                            parse_mode='html', link_preview=False, message=text, file = img_url)
+    else:
+        await bot.send_message(entity=gazp_chat_id,
+                            parse_mode='html', link_preview=False, message=text)
     logger.info(text)
 
 

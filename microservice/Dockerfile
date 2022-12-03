@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:slim
 
 ADD requirements.txt requirements.txt
 
@@ -15,4 +15,6 @@ ADD rss_parser.py rss_parser.py
 ADD bcs_parser.py bcs_parser.py
 
 ADD bot.session bot.session
-ADD gazp.session gazp.session
+ADD Traleetoday.session Traleetoday.session
+
+ENTRYPOINT ["python","./main.py"]
