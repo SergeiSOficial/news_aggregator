@@ -1,11 +1,11 @@
-version: '3.7'
+version: '3.9'
 
 services:
     microservice:
         build:
             context: ./microservice
-        image: news-maker
-        container_name: news-maker
+        image: news-maker-tralee
+        container_name: news-maker-tralee
         restart: unless-stopped
 
         command: ["python3", "main.py"]

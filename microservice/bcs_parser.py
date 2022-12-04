@@ -71,7 +71,10 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
             post_text = ' '.join(summary[:-1])
 
             news_text = f'{title}\n{post_text}\n{link}'
-
+            # delete sentences in post_text to reduce length to 4095
+            while (len(news_text)>= 2048):
+                post_text = ' '.join(post_text.split(' ')[:-1])
+                news_text = f'{title}\n{post_text}\n{link}'
             head = news_text[:n_test_chars].strip()
 
             if head in posted_q:
@@ -85,6 +88,7 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
             posted_q.appendleft(head)
 
             await asyncio.sleep(timeout + random.uniform(0, 0.5))
+        await asyncio.sleep(timeout + random.uniform(0, 0.5))
 
 
 if __name__ == "__main__":
