@@ -4,8 +4,8 @@ services:
     microservice:
         build:
             context: ./microservice
-        image: news-maker-tralee
-        container_name: news-maker-tralee
+        image: news-maker-kerry
+        container_name: news-maker-kerry
         restart: unless-stopped
 
         command: ["python3", "main.py"]

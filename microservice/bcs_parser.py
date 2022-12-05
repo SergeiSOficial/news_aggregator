@@ -8,11 +8,11 @@ from utils import random_user_agent_headers
 
 
 async def bcs_parser(httpx_client, posted_q, n_test_chars=50, 
-                     timeout=300, check_pattern_func=None, 
+                     timeout=30, check_pattern_func=None, 
                      send_message_func=None, logger=None):
-    '''Кастомный парсер сайта traleetoday.ie'''
-    bcs_link = 'http://traleetoday.ie/'
-    source = 'traleetoday.ie'
+    '''Кастомный парсер сайта https://www.radiokerry.ie/'''
+    bcs_link = 'https://www.radiokerry.ie/'
+    source = 'www.radiokerry.ie'
     print("start parser")
 
     while True:
@@ -29,7 +29,7 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
 
         selector = Selector(text=response.text)
         # get news from website
-        lastnews = selector.xpath('//div[contains(@class, "item post-")]')
+        lastnews = selector.xpath('//div[contains(@class, "mb-8")]')
         print("news", len(lastnews))
         if len(lastnews) == 0:
             if not (logger is None):
@@ -41,7 +41,8 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
         
         for row in lastnews:
             try:
-                link = row.xpath('.//a/@href').extract_first()
+                link = row.xpath('.//a[contains(@role, "link")]/@href').extract_first()
+                # print(link)
             except Exception as e:
                 if not (logger is None):
                     logger.error(f'{source} error pass\n{e}')
@@ -58,27 +59,37 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
                 continue
 
             selector = Selector(text=news_response.text)
-            title = selector.xpath('.//h1[@class="title"]/a[@rel="bookmark"]/text()').extract_first()
+            title = selector.xpath('.//h1/text()').extract_first()
             # bold title
             title = "<b>" + title + "</b>"
-            summary = selector.xpath('.//div[@class="entry"]/p[not(contains(@class, "wp-caption aligncenter"))]/text()').extract()
-            img_url = selector.xpath('.//div[@class="entry"]//div[contains(@class, "wp-caption aligncenter")]/img[not(contains(@src, "-Insert-"))]/@src').extract()
-            # print("img_url", img_url)
+            summary = selector.xpath('.//div[contains(@class, "prose")]//p/text()').extract()
+            img_url = selector.xpath('.//img/@src').extract_first()
+            
+            print("img_url", img_url)
             # select only first 10 images
-            if len(img_url) > 10:
-                img_url = img_url[:10]
+            if len(img_url[0]) > 2:
+                if len(img_url) > 10:
+                    img_url = img_url[:10]
             # print("img_url", img_url)
             post_text = ' '.join(summary[:-1])
-
+            # print(post_text)
             news_text = f'{title}\n{post_text}\n{link}'
             # delete sentences in post_text to reduce length to 4095
-            while (len(news_text)>= 2048):
+            cont = ''
+            while (len(news_text)>= 1024-12):
                 post_text = ' '.join(post_text.split(' ')[:-1])
                 news_text = f'{title}\n{post_text}\n{link}'
+                cont = 'Continue...'
+            news_text = f'{title}\n{post_text}\n{cont}\n{link}'
+            # print("news_text", news_text)
             head = news_text[:n_test_chars].strip()
 
+            if len(news_text) < n_test_chars:
+                continue
+            
             if head in posted_q:
                 continue
+            
 
             if send_message_func is None:
                 print(news_text, '\n')

@@ -70,7 +70,7 @@ timeout = 300
 ###########################
 
 
-logger = create_logger('Traletoday')
+logger = create_logger('radiokerry')
 logger.info('Start...')
 
 loop = asyncio.new_event_loop()
@@ -95,7 +95,7 @@ async def send_message_func(text, img_url):
 
 
 # Телеграм парсер
-client = telegram_parser('Traleetoday', api_id, api_hash, telegram_channels, posted_q,
+client = telegram_parser('radiokerry', api_id, api_hash, telegram_channels, posted_q,
                          n_test_chars, check_pattern_func, send_message_func,
                          tele_logger, loop)
 
@@ -130,7 +130,7 @@ async def bcs_wrapper():
         await bcs_parser(httpx_client, posted_q, n_test_chars, timeout,
                          check_pattern_func, send_message_func, logger)
     except Exception as e:
-        message = f'&#9888; ERROR: Traleetoday parser is down! \n{e}'
+        message = f'&#9888; ERROR: RadioKerry parser is down! \n{e}'
         await send_error_message(message, bot_token, gazp_chat_id, logger)
 
 loop.create_task(bcs_wrapper())
