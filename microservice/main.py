@@ -95,7 +95,7 @@ async def send_message_func(text, img_url):
 
 
 # Телеграм парсер
-client = telegram_parser('radiokerry', api_id, api_hash, telegram_channels, posted_q,
+client = telegram_parser('siteparser', api_id, api_hash, telegram_channels, posted_q,
                          n_test_chars, check_pattern_func, send_message_func,
                          tele_logger, loop)
 
