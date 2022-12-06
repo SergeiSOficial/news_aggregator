@@ -6,9 +6,9 @@ from telethon import TelegramClient
 
 from telegram_parser import telegram_parser
 # from rss_parser import rss_parser
-from bcs_parser import bcs_parser
+from site_parser import tralee_parser, kerry_parser
 from utils import create_logger, get_history, send_error_message
-from config import api_id, api_hash, gazp_chat_id, bot_token
+from configs.config import api_id, api_hash, tralee_chat_id, kerry_chat_id, bot_token
 
 
 ###########################
@@ -20,7 +20,7 @@ telegram_channels = {
     # 1101170442: 'https://t.me/rian_ru',
     # 1133408457: 'https://t.me/prime1',
     # 1149896996: 'https://t.me/interfaxonline',
-    # # 1001029560: 'https://t.me/bcs_express',
+    # # 1001029560: 'https://t.me/tralee_express',
     # 1818397776: 'https://t.me/traleetoday',  # Канал аггрегатор новостей
 }
 
@@ -62,7 +62,8 @@ n_test_chars = 50
 amount_messages = 50
 
 # Очередь уже опубликованных постов
-posted_q = deque(maxlen=amount_messages)
+posted_tralee_q = deque(maxlen=amount_messages)
+posted_kerry_q = deque(maxlen=amount_messages)
 
 # +/- интервал между запросами у rss и кастомного парсеров в секундах
 timeout = 300
@@ -83,30 +84,51 @@ bot = TelegramClient('bot', api_id, api_hash,
 bot.start(bot_token=bot_token)
 
 
-async def send_message_func(text, img_url):
+async def send_message_tralee_func(text, img_url):
     '''Отправляет посты в канал через бот'''
+    print(text)
+    print(img_url)
     if(len(img_url) > 0):
-        await bot.send_message(entity=gazp_chat_id,
+        await bot.send_message(entity=tralee_chat_id,
                             parse_mode='html', link_preview=False, message=text, file = img_url)
     else:
-        await bot.send_message(entity=gazp_chat_id,
+        await bot.send_message(entity=tralee_chat_id,
+                            parse_mode='html', link_preview=False, message=text)
+    logger.info(text)
+
+async def send_message_kerry_func(text, img_url):
+    '''Отправляет посты в канал через бот'''
+    print(text)
+    print(img_url)
+    if(len(img_url) > 0):
+        await bot.send_message(entity=kerry_chat_id,
+                            parse_mode='html', link_preview=False, message=text, file = img_url)
+    else:
+        await bot.send_message(entity=kerry_chat_id,
                             parse_mode='html', link_preview=False, message=text)
     logger.info(text)
 
 
 # Телеграм парсер
-client = telegram_parser('Traleetoday', api_id, api_hash, telegram_channels, posted_q,
-                         n_test_chars, check_pattern_func, send_message_func,
+client_tralee = telegram_parser('traleeparser', api_id, api_hash, telegram_channels, posted_tralee_q,
+                         n_test_chars, check_pattern_func, send_message_tralee_func,
+                         tele_logger, loop)
+client_kerry = telegram_parser('kerryparser', api_id, api_hash, telegram_channels, posted_kerry_q,
+                         n_test_chars, check_pattern_func, send_message_kerry_func,
                          tele_logger, loop)
 
 
 # Список из уже опубликованных постов, чтобы их не дублировать
-history = loop.run_until_complete(get_history(client, gazp_chat_id,
+history_tralee = loop.run_until_complete(get_history(client_tralee, tralee_chat_id,
+                                              n_test_chars, amount_messages))
+history_kerry = loop.run_until_complete(get_history(client_kerry, kerry_chat_id,
                                               n_test_chars, amount_messages))
 
-posted_q.extend(history)
+posted_tralee_q.extend(history_tralee)
+posted_kerry_q.extend(history_kerry)
 
-httpx_client = httpx.AsyncClient()
+httpx_tralee_client = httpx.AsyncClient()
+httpx_kerry_client = httpx.AsyncClient()
 
 # Добавляй в текущий event_loop rss парсеры
 # for source, rss_link in rss_channels.items():
@@ -125,25 +147,37 @@ httpx_client = httpx.AsyncClient()
 
 
 # Добавляй в текущий event_loop кастомный парсер
-async def bcs_wrapper():
+async def tralee_wrapper():
     try:
-        await bcs_parser(httpx_client, posted_q, n_test_chars, timeout,
-                         check_pattern_func, send_message_func, logger)
+        await tralee_parser(httpx_tralee_client, posted_tralee_q, n_test_chars, timeout,
+                         check_pattern_func, send_message_tralee_func, logger)
     except Exception as e:
         message = f'&#9888; ERROR: Traleetoday parser is down! \n{e}'
-        await send_error_message(message, bot_token, gazp_chat_id, logger)
+        await send_error_message(message, bot_token, tralee_chat_id, logger)
 
-loop.create_task(bcs_wrapper())
+loop.create_task(tralee_wrapper())
+
+async def kerry_wrapper():
+    try:
+        await kerry_parser(httpx_kerry_client, posted_kerry_q, n_test_chars, timeout,
+                         check_pattern_func, send_message_kerry_func, logger)
+    except Exception as e:
+        message = f'&#9888; ERROR: Kerry parser is down! \n{e}'
+        await send_error_message(message, bot_token, kerry_chat_id, logger)
+
+loop.create_task(kerry_wrapper())
 
 
 try:
     # Запускает все парсеры
-    client.run_until_disconnected()
+    client_tralee.run_until_disconnected()
+    client_kerry.run_until_disconnected()
 
 except Exception as e:
     message = f'&#9888; ERROR: telegram parser (all parsers) is down! \n{e}'
     loop.run_until_complete(send_error_message(message, bot_token,
-                                               gazp_chat_id, logger))
+                                               tralee_chat_id, logger))
 finally:
-    loop.run_until_complete(httpx_client.aclose())
+    loop.run_until_complete(httpx_tralee_client.aclose())
+    loop.run_until_complete(httpx_kerry_client.aclose())
     loop.close()

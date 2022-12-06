@@ -3,3 +3,5 @@
 *.session-journal
 /microservice/config.py
 /news-maker.tar
+/news-maker-tralee.tar
+/microservice/configs/

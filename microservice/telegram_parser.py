@@ -1,7 +1,7 @@
 from collections import deque
 from telethon import TelegramClient, events
 
-from config import api_id, api_hash
+from configs.config import api_id, api_hash
 
 
 def telegram_parser(session, api_id, api_hash, telegram_channels, posted_q,
