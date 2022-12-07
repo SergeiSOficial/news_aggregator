@@ -123,6 +123,7 @@ async def kerry_parser(httpx_client, posted_q, n_test_chars=50,
 
             await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
             continue
+        # print("response ok")
 
         selector = Selector(text=response.text)
         # get news from website
@@ -135,10 +136,12 @@ async def kerry_parser(httpx_client, posted_q, n_test_chars=50,
 
             await asyncio.sleep(timeout*2 + random.uniform(0, 0.5))
             continue
+        # print("lastnews len", len(lastnews))
+        # print("lastnews ok", lastnews)
         
         for row in lastnews:
             try:
-                link = row.xpath('.//a[contains(@role, "link")]/@href').extract_first()
+                link = row.xpath('.//a/@href').extract_first()
                 # print(link)
             except Exception as e:
                 if not (logger is None):
