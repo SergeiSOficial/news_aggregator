@@ -3,12 +3,16 @@ import asyncio
 from collections import deque
 import httpx
 from scrapy.selector import Selector
+from bs4 import BeautifulSoup
 
 from utils import random_user_agent_headers
 
+def remove_newline(value):
+    return ''.join(value.splitlines())
+ 
 
 async def tralee_parser(httpx_client, posted_q, n_test_chars=50, 
-                     timeout=60, check_pattern_func=None, 
+                     timeout=63, check_pattern_func=None, 
                      send_message_func=None, logger=None):
     '''Кастомный парсер сайта traleetoday.ie'''
     bcs_link = 'http://traleetoday.ie/'
@@ -82,12 +86,20 @@ async def tralee_parser(httpx_client, posted_q, n_test_chars=50,
                 cont = 'Continue...'
             news_text = f'{title}\n{post_text}\n{cont}\n{link}'
             
-            head = news_text[:n_test_chars].strip()
+            
 
             if len(news_text) < n_test_chars:
                 continue
             
+            news_text_for_head = remove_newline(news_text)
+            soup = BeautifulSoup(news_text_for_head.strip(), 'html.parser')
+            head_full = soup.text
+            
+            head = head_full[:n_test_chars].strip()
+            
+            # print("news_text", head)
             if head in posted_q:
+                await asyncio.sleep(timeout + random.uniform(0, 0.5) + 1)
                 continue
 
             if send_message_func is None:
@@ -105,7 +117,7 @@ async def tralee_parser(httpx_client, posted_q, n_test_chars=50,
 
 
 async def kerry_parser(httpx_client, posted_q, n_test_chars=50, 
-                     timeout=30, check_pattern_func=None, 
+                     timeout=35, check_pattern_func=None, 
                      send_message_func=None, logger=None):
     '''Кастомный парсер сайта https://www.radiokerry.ie/'''
     bcs_link = 'https://www.radiokerry.ie/'
@@ -183,12 +195,21 @@ async def kerry_parser(httpx_client, posted_q, n_test_chars=50,
                 cont = 'Continue...'
             news_text = f'{title}\n{post_text}\n{cont}\n{link}'
             # print("news_text", news_text)
-            head = news_text[:n_test_chars].strip()
+            
+            
 
             if len(news_text) < n_test_chars:
                 continue
             
+            news_text_for_head = remove_newline(news_text)
+            soup = BeautifulSoup(news_text_for_head.strip(), 'html.parser')
+            head_full = soup.text
+            
+            head = head_full[:n_test_chars].strip()
+            
+            # print("news_text", head)
             if head in posted_q:
+                await asyncio.sleep(timeout + random.uniform(0, 0.5) + 1)
                 continue
             
 
@@ -199,8 +220,8 @@ async def kerry_parser(httpx_client, posted_q, n_test_chars=50,
 
             posted_q.appendleft(head)
 
-            await asyncio.sleep(timeout + random.uniform(0, 0.5))
-        await asyncio.sleep(timeout + random.uniform(0, 0.5))
+            await asyncio.sleep(timeout + random.uniform(0, 0.5) + 1)
+        await asyncio.sleep(timeout + random.uniform(0, 0.5) + 2)
 
 
 
@@ -211,12 +232,20 @@ if __name__ == "__main__":
     posted_tralee_q = deque(maxlen=20)
 
     httpx_client_tralee = httpx.AsyncClient()
-
-    asyncio.run(tralee_parser(httpx_client_tralee, posted_tralee_q))
-    
     # Очередь из уже опубликованных постов, чтобы их не дублировать
     posted_kerry_q = deque(maxlen=20)
-
     httpx_client_kerry = httpx.AsyncClient()
+    # run tralee parser and kerry parser in parallel
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(tralee_parser(httpx_client_tralee, posted_tralee_q, n_test_chars=50, 
+                     timeout=7, check_pattern_func=None, 
+                     send_message_func=None, logger=None),
+    kerry_parser(httpx_client_kerry, posted_kerry_q, n_test_chars=50, 
+                     timeout=7, check_pattern_func=None, 
+                     send_message_func=None, logger=None)))
+    loop.close()
 
-    asyncio.run(kerry_parser(httpx_client_kerry, posted_kerry_q))
+    # # Закрываем соединение
+    httpx_client_tralee.close()
+    httpx_client_kerry.close()
+    

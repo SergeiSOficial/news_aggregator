@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM continuumio/miniconda3:master
 
 ADD requirements.txt requirements.txt
 

@@ -3,3 +3,4 @@ Scrapy
 Telethon
 telethon-cryptg
 httpx
+beautifulsoup4

@@ -71,7 +71,7 @@ timeout = 300
 ###########################
 
 
-logger = create_logger('Traletoday')
+logger = create_logger('parsers_logger')
 logger.info('Start...')
 
 loop = asyncio.new_event_loop()
@@ -119,6 +119,7 @@ client_kerry = telegram_parser('kerryparser', api_id, api_hash, telegram_channel
 
 
 # Список из уже опубликованных постов, чтобы их не дублировать
+
 history_tralee = loop.run_until_complete(get_history(client_tralee, tralee_chat_id,
                                               n_test_chars, amount_messages))
 history_kerry = loop.run_until_complete(get_history(client_kerry, kerry_chat_id,
@@ -128,7 +129,7 @@ posted_tralee_q.extend(history_tralee)
 posted_kerry_q.extend(history_kerry)
 
 httpx_tralee_client = httpx.AsyncClient()
-httpx_kerry_client = httpx.AsyncClient()
+# httpx_kerry_client = httpx.AsyncClient()
 
 # Добавляй в текущий event_loop rss парсеры
 # for source, rss_link in rss_channels.items():
@@ -152,32 +153,35 @@ async def tralee_wrapper():
         await tralee_parser(httpx_tralee_client, posted_tralee_q, n_test_chars, timeout,
                          check_pattern_func, send_message_tralee_func, logger)
     except Exception as e:
-        message = f'&#9888; ERROR: Traleetoday parser is down! \n{e}'
-        await send_error_message(message, bot_token, tralee_chat_id, logger)
+        message = f'&#9888; ERROR: Traleetoday arser is down! \n{e}'
+        await send_error_message(message, bot_token, parsers_chat_id, logger)
 
 loop.create_task(tralee_wrapper())
 
+# Добавляй в текущий event_loop кастомный парсер
 async def kerry_wrapper():
     try:
-        await kerry_parser(httpx_kerry_client, posted_kerry_q, n_test_chars, timeout,
+        await kerry_parser(httpx_tralee_client, posted_kerry_q, n_test_chars, timeout,
                          check_pattern_func, send_message_kerry_func, logger)
     except Exception as e:
         message = f'&#9888; ERROR: Kerry parser is down! \n{e}'
-        await send_error_message(message, bot_token, kerry_chat_id, logger)
+        await send_error_message(message, bot_token, parsers_chat_id, logger)
 
 loop.create_task(kerry_wrapper())
 
 
+
 try:
-    # Запускает все парсеры
-    client_tralee.run_until_disconnected()
+    # run tralee client and kerry client in parallel
+    # loop.run_until_complete(asyncio.gather(client_tralee(), client_kerry()))
+    # client_tralee.run_until_disconnected()
     client_kerry.run_until_disconnected()
+
 
 except Exception as e:
     message = f'&#9888; ERROR: telegram parser (all parsers) is down! \n{e}'
     loop.run_until_complete(send_error_message(message, bot_token,
-                                               tralee_chat_id, logger))
+                                               parsers_chat_id, logger))
 finally:
     loop.run_until_complete(httpx_tralee_client.aclose())
-    loop.run_until_complete(httpx_kerry_client.aclose())
     loop.close()
