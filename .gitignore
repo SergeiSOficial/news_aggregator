@@ -1,0 +1,4 @@
+
+*.pyc
+microservice/configs/config.py
+*.session

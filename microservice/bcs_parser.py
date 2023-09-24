@@ -11,8 +11,8 @@ async def bcs_parser(httpx_client, posted_q, n_test_chars=50,
                      timeout=2, check_pattern_func=None, 
                      send_message_func=None, logger=None):
     '''Кастомный парсер сайта bcs-express.ru'''
-    bcs_link = 'https://bcs-express.ru/category'
-    source = 'www.bcs-express.ru'
+    bcs_link = 'http://traleetoday.ie/'
+    source = 'traleetoday.ie'
 
     while True:
         try:

@@ -32,9 +32,10 @@ async def get_history(client, chat_id, n_test_chars=50, amount_messages=50):
         post = message.raw_text.split('\n')
 
         # Выкидывет источник и ссылку из поста, оставляя только текст
-        text = '\n'.join(post[2:])
+        text = ''.join(post)
 
         history.append(text[:n_test_chars].strip())
+        # print("history : ", history)
 
     return history
 

@@ -1,7 +1,7 @@
 from collections import deque
 from telethon import TelegramClient, events
 
-from config import api_id, api_hash
+from configs.config import api_id, api_hash
 
 
 def telegram_parser(session, api_id, api_hash, telegram_channels, posted_q,
@@ -10,13 +10,13 @@ def telegram_parser(session, api_id, api_hash, telegram_channels, posted_q,
     '''Телеграм парсер'''
 
     # Ссылки на телеграмм каналы
-    telegram_channels_links = list(telegram_channels.values())
+    # telegram_channels_links = list(telegram_channels.values())
 
     client = TelegramClient(session, api_id, api_hash,
                             base_logger=logger, loop=loop)
     client.start()
 
-    @client.on(events.NewMessage(chats=telegram_channels_links))
+    @client.on(events.NewMessage(chats=telegram_channels))
     async def handler(event):
         '''Забирает посты из телеграмм каналов и посылает их в наш канал'''
         if event.raw_text == '':
